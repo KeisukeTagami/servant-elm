@@ -4,7 +4,7 @@ import Http
 
 
 postBooks : Book -> Http.Request (NoContent)
-postBooks body =
+postBooks b =
     Http.request
         { method =
             "POST"
@@ -16,7 +16,7 @@ postBooks body =
                 , "books"
                 ]
         , body =
-            Http.jsonBody (encodeBook body)
+            Http.jsonBody (encodeBook b)
         , expect =
             Http.expectStringResponse
                 (\{ body } ->

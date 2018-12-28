@@ -6,7 +6,7 @@ import Json.Encode
 
 
 postTwo : String -> Http.Request (Maybe (Int))
-postTwo body =
+postTwo b =
     Http.request
         { method =
             "POST"
@@ -18,7 +18,7 @@ postTwo body =
                 , "two"
                 ]
         , body =
-            Http.jsonBody (Json.Encode.string body)
+            Http.jsonBody (Json.Encode.string b)
         , expect =
             Http.expectJson (maybe int)
         , timeout =

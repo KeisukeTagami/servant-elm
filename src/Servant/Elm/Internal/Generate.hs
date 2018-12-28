@@ -1,19 +1,21 @@
+
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 module Servant.Elm.Internal.Generate where
 
-import           Prelude                      hiding ((<$>))
 import           Control.Lens                 (to, (^.))
 import           Data.List                    (nub)
 import           Data.Maybe                   (catMaybes)
 import           Data.Proxy                   (Proxy)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import qualified Data.Text.Lazy               as L
 import qualified Data.Text.Encoding           as T
-import           Elm                          (ElmDatatype(..), ElmPrimitive(..))
+import qualified Data.Text.Lazy               as L
+import           Elm                          (ElmDatatype (..),
+                                               ElmPrimitive (..))
 import qualified Elm
+import           Prelude                      hiding ((<$>))
 import           Servant.API                  (NoContent (..))
 import           Servant.Elm.Internal.Foreign (LangElm, getEndpoints)
 import           Servant.Elm.Internal.Orphans ()
@@ -99,6 +101,7 @@ defElmImports =
     , "import Json.Encode"
     , "import Http"
     , "import String"
+    , "import Url"
     ]
 
 
@@ -187,7 +190,7 @@ mkTypeSignature opts request =
     urlPrefixType :: Maybe Doc
     urlPrefixType =
         case (urlPrefix opts) of
-          Dynamic -> Just "String"
+          Dynamic  -> Just "String"
           Static _ -> Nothing
 
     elmTypeRef :: ElmDatatype -> Doc
@@ -244,7 +247,7 @@ elmQueryArg arg =
 
 elmBodyArg :: Doc
 elmBodyArg =
-  "body"
+  "b"
 
 
 isNotCookie :: F.HeaderArg f -> Bool
@@ -263,7 +266,7 @@ mkArgs opts request =
   (hsep . concat) $
     [ -- Dynamic url prefix
       case urlPrefix opts of
-        Dynamic -> ["urlBase"]
+        Dynamic  -> ["urlBase"]
         Static _ -> []
     , -- Headers
       [ elmHeaderArg header
@@ -418,7 +421,7 @@ mkUrl opts segments =
   "String.join" <+> dquotes "/" <$>
   (indent i . elmList)
     ( case urlPrefix opts of
-        Dynamic -> "urlBase"
+        Dynamic    -> "urlBase"
         Static url -> dquotes (stext url)
       : map segmentToDoc segments)
   where
@@ -437,7 +440,7 @@ mkUrl opts segments =
               else
                 " |> toString"
           in
-            (elmCaptureArg s) <> toStringSrc <> " |> Http.encodeUri"
+            (elmCaptureArg s) <> toStringSrc <> " |> Url.percentEncode"
 
 
 mkQueryParams
@@ -476,7 +479,7 @@ isElmMaybeStringType _ _ = False
 
 isElmMaybeType :: ElmDatatype -> Bool
 isElmMaybeType (ElmPrimitive (EMaybe _)) = True
-isElmMaybeType _ = False
+isElmMaybeType _                         = False
 
 
 -- Doc helpers
