@@ -44,7 +44,7 @@ getBooks query_published query_sort query_year query_category query_filters =
             , body =
                 Http.emptyBody
             , expect =
-                Http.expectJson (list decodeBook)
+                Http.expectJson (list succeedBook)
             , timeout =
                 Nothing
             , withCredentials =

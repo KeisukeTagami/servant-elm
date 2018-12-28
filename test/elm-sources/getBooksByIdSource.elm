@@ -19,7 +19,7 @@ getBooksById capture_id =
         , body =
             Http.emptyBody
         , expect =
-            Http.expectJson decodeBook
+            Http.expectJson succeedBook
         , timeout =
             Nothing
         , withCredentials =
