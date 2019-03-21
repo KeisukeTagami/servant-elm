@@ -317,7 +317,7 @@ mkLetParams opts request =
               if isElmStringType opts argType || isElmMaybeStringType opts argType then
                 ""
               else
-                "toString >> "
+                "String.fromInt >> "
           in
               (if wrapped then elmName else "Just" <+> elmName) <$>
               indent 4 ("|> Maybe.map" <+> parens (toStringSrc <> "Http.encodeUri >> (++)" <+> dquotes (name <> equals)) <$>
@@ -331,7 +331,7 @@ mkLetParams opts request =
 
         F.List ->
             elmName <$>
-            indent 4 ("|> List.map" <+> parens (backslash <> "val ->" <+> dquotes (name <> "[]=") <+> "++ (val |> toString |> Http.encodeUri)") <$>
+            indent 4 ("|> List.map" <+> parens (backslash <> "val ->" <+> dquotes (name <> "[]=") <+> "++ (val |> String.fromInt |> Http.encodeUri)") <$>
                       "|> String.join" <+> dquotes "&")
       where
         elmName = elmQueryArg qarg
@@ -372,7 +372,7 @@ mkRequest opts request =
             if isElmMaybeStringType opts argType || isElmStringType opts argType then
               mempty
             else
-              " << toString"
+              " << String.fromInt"
       in
         "Maybe.map" <+> parens (("Http.header" <+> dquotes headerName <> toStringSrc))
         <+>
@@ -443,7 +443,7 @@ mkUrl opts segments =
               if isElmStringType opts (arg ^. F.argType) then
                 empty
               else
-                " |> toString"
+                " |> String.fromInt"
           in
             (elmCaptureArg s) <> toStringSrc <> " |> Url.percentEncode"
 
