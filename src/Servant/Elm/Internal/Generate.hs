@@ -90,8 +90,11 @@ The default required imports are:
 > import Json.Decode exposing (..)
 > import Json.Decode.Pipeline exposing (..)
 > import Json.Encode
+> import Iso8601
 > import Http
 > import String
+> import Url
+> import Time
 -}
 defElmImports :: Text
 defElmImports =
@@ -99,9 +102,11 @@ defElmImports =
     [ "import Json.Decode exposing (..)"
     , "import Json.Decode.Pipeline exposing (..)"
     , "import Json.Encode"
+    , "import Iso8601"
     , "import Http"
     , "import String"
     , "import Url"
+    , "import Time"
     ]
 
 
