@@ -105,6 +105,7 @@ defElmImports =
     , "import Iso8601"
     , "import Http"
     , "import String"
+    , "import Tuple exposing (pair)"
     , "import Url"
     , "import Time"
     ]
