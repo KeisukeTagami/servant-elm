@@ -1,3 +1,18 @@
+0.6.0.2
+-------
+
+* Ticket #53. Don't add a "query_" prefix to query params
+
+0.6.0.1
+-------
+
+* Bug: Replace special symbols in query string param name
+
+0.6.0.0
+-------
+
+* PR #49. Support Elm 0.19, migrate to elm-bridge, support http 2.0.0
+
 0.5.0.0
 -------
 * Fix generation for APIs with response headers.
