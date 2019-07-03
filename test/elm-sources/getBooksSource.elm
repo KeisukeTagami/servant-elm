@@ -17,13 +17,13 @@ getBooks query_published query_sort query_year query_category query_filters =
                     |> Maybe.map (Http.encodeUri >> (++) "sort=")
                     |> Maybe.withDefault ""
                 , query_year
-                    |> Maybe.map (String.fromInt >> Http.encodeUri >> (++) "year=")
+                    |> Maybe.map (toString >> Http.encodeUri >> (++) "year=")
                     |> Maybe.withDefault ""
                 , Just query_category
                     |> Maybe.map (Http.encodeUri >> (++) "category=")
                     |> Maybe.withDefault ""
                 , query_filters
-                    |> List.map (\val -> "filters[]=" ++ (val |> String.fromInt |> Http.encodeUri))
+                    |> List.map (\val -> "filters[]=" ++ (val |> toString |> Http.encodeUri))
                     |> String.join "&"
                 ]
     in
@@ -44,7 +44,7 @@ getBooks query_published query_sort query_year query_category query_filters =
             , body =
                 Http.emptyBody
             , expect =
-                Http.expectJson (list succeedBook)
+                Http.expectJson (list decodeBook)
             , timeout =
                 Nothing
             , withCredentials =

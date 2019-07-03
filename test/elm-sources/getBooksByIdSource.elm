@@ -14,12 +14,12 @@ getBooksById capture_id =
             String.join "/"
                 [ ""
                 , "books"
-                , capture_id |> String.fromInt |> Url.percentEncode
+                , capture_id |> toString |> Http.encodeUri
                 ]
         , body =
             Http.emptyBody
         , expect =
-            Http.expectJson succeedBook
+            Http.expectJson decodeBook
         , timeout =
             Nothing
         , withCredentials =

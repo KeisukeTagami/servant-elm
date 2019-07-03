@@ -14,12 +14,12 @@ getBooksByTitle capture_title =
             String.join "/"
                 [ ""
                 , "books"
-                , capture_title |> Url.percentEncode
+                , capture_title |> Http.encodeUri
                 ]
         , body =
             Http.emptyBody
         , expect =
-            Http.expectJson succeedBook
+            Http.expectJson decodeBook
         , timeout =
             Nothing
         , withCredentials =

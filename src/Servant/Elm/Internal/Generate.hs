@@ -1,21 +1,19 @@
-
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 module Servant.Elm.Internal.Generate where
 
+import           Prelude                      hiding ((<$>))
 import           Control.Lens                 (to, (^.))
 import           Data.List                    (nub)
 import           Data.Maybe                   (catMaybes)
 import           Data.Proxy                   (Proxy)
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import qualified Data.Text.Encoding           as T
 import qualified Data.Text.Lazy               as L
-import           Elm                          (ElmDatatype (..),
-                                               ElmPrimitive (..))
+import qualified Data.Text.Encoding           as T
+import           Elm                          (ElmDatatype(..), ElmPrimitive(..))
 import qualified Elm
-import           Prelude                      hiding ((<$>))
 import           Servant.API                  (NoContent (..))
 import           Servant.Elm.Internal.Foreign (LangElm, getEndpoints)
 import           Servant.Elm.Internal.Orphans ()
@@ -90,11 +88,8 @@ The default required imports are:
 > import Json.Decode exposing (..)
 > import Json.Decode.Pipeline exposing (..)
 > import Json.Encode
-> import Iso8601
 > import Http
 > import String
-> import Url
-> import Time
 -}
 defElmImports :: Text
 defElmImports =
@@ -102,12 +97,8 @@ defElmImports =
     [ "import Json.Decode exposing (..)"
     , "import Json.Decode.Pipeline exposing (..)"
     , "import Json.Encode"
-    , "import Iso8601"
     , "import Http"
     , "import String"
-    , "import Tuple exposing (pair)"
-    , "import Url"
-    , "import Time"
     ]
 
 
@@ -196,7 +187,7 @@ mkTypeSignature opts request =
     urlPrefixType :: Maybe Doc
     urlPrefixType =
         case (urlPrefix opts) of
-          Dynamic  -> Just "String"
+          Dynamic -> Just "String"
           Static _ -> Nothing
 
     elmTypeRef :: ElmDatatype -> Doc
@@ -253,7 +244,7 @@ elmQueryArg arg =
 
 elmBodyArg :: Doc
 elmBodyArg =
-  "b"
+  "body"
 
 
 isNotCookie :: F.HeaderArg f -> Bool
@@ -272,7 +263,7 @@ mkArgs opts request =
   (hsep . concat) $
     [ -- Dynamic url prefix
       case urlPrefix opts of
-        Dynamic  -> ["urlBase"]
+        Dynamic -> ["urlBase"]
         Static _ -> []
     , -- Headers
       [ elmHeaderArg header
@@ -318,7 +309,7 @@ mkLetParams opts request =
               if isElmStringType opts argType || isElmMaybeStringType opts argType then
                 ""
               else
-                "String.fromInt >> "
+                "toString >> "
           in
               (if wrapped then elmName else "Just" <+> elmName) <$>
               indent 4 ("|> Maybe.map" <+> parens (toStringSrc <> "Http.encodeUri >> (++)" <+> dquotes (name <> equals)) <$>
@@ -332,7 +323,7 @@ mkLetParams opts request =
 
         F.List ->
             elmName <$>
-            indent 4 ("|> List.map" <+> parens (backslash <> "val ->" <+> dquotes (name <> "[]=") <+> "++ (val |> String.fromInt |> Http.encodeUri)") <$>
+            indent 4 ("|> List.map" <+> parens (backslash <> "val ->" <+> dquotes (name <> "[]=") <+> "++ (val |> toString |> Http.encodeUri)") <$>
                       "|> String.join" <+> dquotes "&")
       where
         elmName = elmQueryArg qarg
@@ -373,7 +364,7 @@ mkRequest opts request =
             if isElmMaybeStringType opts argType || isElmStringType opts argType then
               mempty
             else
-              " << String.fromInt"
+              " << toString"
       in
         "Maybe.map" <+> parens (("Http.header" <+> dquotes headerName <> toStringSrc))
         <+>
@@ -427,7 +418,7 @@ mkUrl opts segments =
   "String.join" <+> dquotes "/" <$>
   (indent i . elmList)
     ( case urlPrefix opts of
-        Dynamic    -> "urlBase"
+        Dynamic -> "urlBase"
         Static url -> dquotes (stext url)
       : map segmentToDoc segments)
   where
@@ -444,9 +435,9 @@ mkUrl opts segments =
               if isElmStringType opts (arg ^. F.argType) then
                 empty
               else
-                " |> String.fromInt"
+                " |> toString"
           in
-            (elmCaptureArg s) <> toStringSrc <> " |> Url.percentEncode"
+            (elmCaptureArg s) <> toStringSrc <> " |> Http.encodeUri"
 
 
 mkQueryParams
@@ -485,7 +476,7 @@ isElmMaybeStringType _ _ = False
 
 isElmMaybeType :: ElmDatatype -> Bool
 isElmMaybeType (ElmPrimitive (EMaybe _)) = True
-isElmMaybeType _                         = False
+isElmMaybeType _ = False
 
 
 -- Doc helpers
