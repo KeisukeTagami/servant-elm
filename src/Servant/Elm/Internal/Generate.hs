@@ -1,29 +1,31 @@
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
 module Servant.Elm.Internal.Generate where
 
-import           Prelude                      hiding ((<$>))
 import           Control.Lens                 (to, (^.))
 import           Data.List                    (intercalate, intersperse, nub)
 import           Data.Maybe                   (catMaybes)
-import           Data.Proxy                   (Proxy(..))
+import           Data.Proxy                   (Proxy (..))
 import           Data.Text                    (Text)
 import qualified Data.Text                    as T
-import qualified Data.Text.Lazy               as L
 import qualified Data.Text.Encoding           as T
 import           Data.Text.IO                 as TIO
+import qualified Data.Text.Lazy               as L
+import           Prelude                      hiding ((<$>))
 
-import           Elm.Json (jsonParserForType, jsonSerForType)
+import           Elm.Json                     (jsonParserForType,
+                                               jsonSerForType)
 import qualified Elm.Module                   as Elm
-import           Elm.TyRep (ETCon(..), EType(..), ETypeDef(..), toElmType)
-import           Elm.TyRender (renderElm)
-import           Elm.Versions (ElmVersion(Elm0p18))
+import           Elm.TyRender                 (renderElm)
+import           Elm.TyRep                    (ETCon (..), EType (..),
+                                               ETypeDef (..), toElmType)
+import           Elm.Versions                 (ElmVersion (Elm0p18))
 
 import           Servant.Elm.Internal.Foreign (LangElm, getEndpoints)
 import qualified Servant.Foreign              as F
-import           System.Directory (createDirectoryIfMissing)
+import           System.Directory             (createDirectoryIfMissing)
 import           Text.PrettyPrint.Leijen.Text
 
 
@@ -49,7 +51,7 @@ data ElmOptions = ElmOptions
     argument.
     -}
     urlPrefix             :: UrlPrefix
-  , elmTypeAlterations        :: (EType -> EType)
+  , elmTypeAlterations    :: (EType -> EType)
     -- ^ Alterations to perform on ETypes before code generation.
   , elmAlterations        :: (ETypeDef -> ETypeDef)
     -- ^ Alterations to perform on ETypeDefs before code generation.
@@ -112,6 +114,7 @@ The default required imports are:
 > import Set
 > import Http
 > import String
+> import Time exposing (Posix)
 > import Url.Builder
 -}
 defElmImports :: Text
@@ -124,7 +127,9 @@ defElmImports =
     , "import Dict exposing (Dict)"
     , "import Set"
     , "import Http"
+    , "import Iso8601"
     , "import String"
+    , "import Time exposing (Posix)"
     , "import Url.Builder"
     , ""
     , "maybeBoolToIntStr : Maybe Bool -> String"
@@ -134,6 +139,7 @@ defElmImports =
     , "    Just True -> \"1\""
     , "    Just False -> \"0\""
     ]
+
 
 {-|
 Helper to generate a complete Elm module given a list of Elm type definitions
@@ -268,7 +274,7 @@ mkTypeSignature opts request =
     urlPrefixType :: Maybe Doc
     urlPrefixType =
         case (urlPrefix opts) of
-          Dynamic -> Just "String"
+          Dynamic  -> Just "String"
           Static _ -> Nothing
 
     elmTypeRef :: EType -> Doc
@@ -352,7 +358,7 @@ mkArgs opts request =
   (hsep . concat) $
     [ -- Dynamic url prefix
       case urlPrefix opts of
-        Dynamic -> ["urlBase"]
+        Dynamic  -> ["urlBase"]
         Static _ -> []
     , -- Headers
       [ elmHeaderArg header
@@ -506,7 +512,7 @@ mkRequest opts request =
             indent i "Err e -> toMsg (Err e)" <> line <+>
             indent i "Ok _ -> toMsg (Ok ()))"
         Just elmTypeExpr ->
-          "Http.expectJson toMsg" <+> renderDecoderName elmTypeExpr
+          "Http.expectJson toMsg" <+> renderDecoderName (elmTypeAlterations opts $ elmTypeExpr)
         Nothing -> error "mkHttpRequest: no reqReturnType?"
       -- case request ^. F.reqReturnType of
       --   Just elmTypeExpr | isEmptyType opts elmTypeExpr ->
@@ -536,14 +542,16 @@ renderDecoderName elmTypeExpr =
       parens ("Json.Decode.maybe " <> parens (renderDecoderName t))
     ETyCon (ETCon "Int") -> "Json.Decode.int"
     ETyCon (ETCon "String") -> "Json.Decode.string"
+    ETyApp (ETyCon (ETCon "Entity")) t -> ("jsonDecEntity" <> stext (T.pack (renderElm t)))
+    ETyApp (ETyCon (ETCon "Key")) _ -> "Json.Decode.int"
     _ -> ("jsonDec" <> stext (T.pack (renderElm elmTypeExpr)))
 
 
 mkUrl :: ElmOptions -> [F.Segment EType] -> Doc
 mkUrl opts segments =
   urlBuilder <$>
-    (indent i . elmList)
-    ( map segmentToDoc segments)
+    (indent i)
+    ("(" <> (foldr1 (\ a b -> a <> " ++ " <> b ) $ map segmentToDoc segments) <> ")" )
   -- ( case urlPrefix opts of
   --     Dynamic -> "urlBase"
   --     Static url -> dquotes (stext url)
@@ -551,14 +559,14 @@ mkUrl opts segments =
   where
     urlBuilder :: Doc
     urlBuilder = case urlPrefix opts of
-      Dynamic -> "Url.Builder.absolute" :: Doc
+      Dynamic    -> "Url.Builder.absolute" :: Doc
       Static url -> "Url.Builder.crossOrigin" <+> dquotes (stext url)
 
     segmentToDoc :: F.Segment EType -> Doc
     segmentToDoc s =
       case F.unSegment s of
         F.Static path ->
-          dquotes (stext (F.unPathSegment path))
+          "[" <> dquotes (stext (F.unPathSegment path)) <> "]"
         F.Cap arg ->
           let
             -- Don't use "toString" on Elm Strings, otherwise we get extraneous quotes.
@@ -568,7 +576,9 @@ mkUrl opts segments =
               else
                 " |> String.fromInt"
           in
-            (elmCaptureArg s) <> toStringSrc
+            if isElmListType (arg ^. F.argType)
+              then elmCaptureArg s
+              else "[" <> (elmCaptureArg s) <> toStringSrc <> "]"
 
 
 mkQueryParams
@@ -596,6 +606,11 @@ isElmStringType :: ElmOptions -> EType -> Bool
 isElmStringType opts elmTypeExpr =
   elmTypeExpr `elem` stringElmTypes opts
 
+isElmListType :: EType -> Bool
+isElmListType (ETyApp (ETyCon (ETCon {tc_name = "List"})) _) = True
+isElmListType _                                              = False
+
+
 {- | Determines whether a type is 'Maybe a' where 'a' is something akin to a 'String'.
 -}
 isElmMaybeStringType :: ElmOptions -> EType -> Bool
@@ -604,7 +619,7 @@ isElmMaybeStringType _ _ = False
 
 isElmMaybeType :: EType -> Bool
 isElmMaybeType (ETyApp (ETyCon (ETCon "Maybe")) _) = True
-isElmMaybeType _ = False
+isElmMaybeType _                                   = False
 
 isElmListOfMaybeBoolType :: EType -> Bool
 isElmListOfMaybeBoolType t =

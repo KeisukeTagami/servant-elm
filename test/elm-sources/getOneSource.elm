@@ -20,8 +20,7 @@ getOne toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "one"
-                    ]
+                    (["one"])
                     params
             , body =
                 Http.emptyBody

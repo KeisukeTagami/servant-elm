@@ -22,8 +22,7 @@ postBooks body toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "books"
-                    ]
+                    (["books"])
                     params
             , body =
                 Http.jsonBody (jsonEncBook body)

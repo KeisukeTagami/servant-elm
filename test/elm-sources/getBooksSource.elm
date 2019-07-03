@@ -43,8 +43,7 @@ getBooks query_published query_sort query_year query_category query_filters toMs
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "books"
-                    ]
+                    (["books"])
                     params
             , body =
                 Http.emptyBody

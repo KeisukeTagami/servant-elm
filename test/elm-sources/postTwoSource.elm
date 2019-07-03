@@ -21,8 +21,7 @@ postTwo body toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "two"
-                    ]
+                    (["two"])
                     params
             , body =
                 Http.jsonBody (Json.Encode.string body)

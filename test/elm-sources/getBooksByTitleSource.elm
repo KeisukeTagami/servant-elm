@@ -22,9 +22,7 @@ getBooksByTitle capture_title toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "books"
-                    , capture_title
-                    ]
+                    (["books"] ++ [capture_title])
                     params
             , body =
                 Http.emptyBody

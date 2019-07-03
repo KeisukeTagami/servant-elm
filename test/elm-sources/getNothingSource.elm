@@ -19,8 +19,7 @@ getNothing toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "nothing"
-                    ]
+                    (["nothing"])
                     params
             , body =
                 Http.emptyBody

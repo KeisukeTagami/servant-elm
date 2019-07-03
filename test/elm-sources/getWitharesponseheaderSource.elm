@@ -20,8 +20,7 @@ getWitharesponseheader toMsg =
                 []
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "with-a-response-header"
-                    ]
+                    (["with-a-response-header"])
                     params
             , body =
                 Http.emptyBody

@@ -25,8 +25,7 @@ getWithaheader header_myStringHeader header_MyIntHeader header_MyRequiredStringH
                     ]
             , url =
                 Url.Builder.crossOrigin ""
-                    [ "with-a-header"
-                    ]
+                    (["with-a-header"])
                     params
             , body =
                 Http.emptyBody

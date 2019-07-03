@@ -20,8 +20,7 @@ getOne urlBase toMsg =
                 []
             , url =
                 Url.Builder.absolute
-                    [ "one"
-                    ]
+                    (["one"])
                     params
             , body =
                 Http.emptyBody
